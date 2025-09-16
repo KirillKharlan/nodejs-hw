@@ -8,3 +8,12 @@ const moment = require('moment');
 
     const currentDate = getDate();
     console.log(currentDate);
+
+
+    function getCurrentWeekDay() {
+      const day = moment();
+      return day.format('dddd');
+    }
+
+    const currentDay = getCurrentWeekDay();
+    console.log(currentDay);

@@ -1,5 +1,5 @@
-{
-    "post-1": {
+[
+    {
         "idPost": "1",
         "name": "First",
         "postDescription": "first post",
@@ -7,7 +7,7 @@
         "likes": "6"
     },
 
-    "post-2": {
+    {
         "idPost": "2",
         "name": "Second",
         "postDescription": "second post",
@@ -15,11 +15,19 @@
         "likes": "7"
     },
 
-    "post-3": {
+    {
         "idPost": "3",
         "name": "Third",
         "postDescription": "third post",
         "img": "https://www.google.com/imgres?q=maxwell%20cat&imgurl=https%3A%2F%2Fi1.sndcdn.com%2Fartworks-oGvaMt0dsBWPL7WZ-qgbAMA-t500x500.jpg&imgrefurl=https%3A%2F%2Fsoundcloud.com%2Fuser-48122866-55101583%2Fmaxwell&docid=PZ6Xj0Mrn5Z3rM&tbnid=vU2eQ8nFqIlDQM&vet=12ahUKEwj1kcSNi--PAxWNFBAIHXwXLCgQM3oECCYQAA..i&w=500&h=500&hcb=2&ved=2ahUKEwj1kcSNi--PAxWNFBAIHXwXLCgQM3oECCYQAA",
         "likes": "10"
+    },
+
+    {
+        "idPost": "4",
+        "name": "Four",
+        "postDescription": "four post",
+        "img": "https://www.google.com/imgres?q=maxwell%20cat&imgurl=https%3A%2F%2Fi1.sndcdn.com%2Fartworks-oGvaMt0dsBWPL7WZ-qgbAMA-t500x500.jpg&imgrefurl=https%3A%2F%2Fsoundcloud.com%2Fuser-48122866-55101583%2Fmaxwell&docid=PZ6Xj0Mrn5Z3rM&tbnid=vU2eQ8nFqIlDQM&vet=12ahUKEwj1kcSNi--PAxWNFBAIHXwXLCgQM3oECCYQAA..i&w=500&h=500&hcb=2&ved=2ahUKEwj1kcSNi--PAxWNFBAIHXwXLCgQM3oECCYQAA",
+        "likes": "7"
     }
-}
+]

@@ -32,45 +32,57 @@ app.get("/timestamp", (req, res)=>{
   res.json({currentTime: currentDate})
 })
 
-
 app.get('/posts', (req, res) => {
-  const skip = parseInt(req.query.skip, 4) || 0;
-  const take = parseInt(req.query.take, 4) || 4;
+  const skipC = req.query.skip;
+  const takeC = req.query.take;
 
-  if (take <= 0) {
-        return res.status(400).json({ error: "Параметр 'take' должен числом." });
+  let skip = 0;
+  let take;
+
+  if (skipC !== undefined && skipC !=='') {
+    skip = parseInt(skipC);
+    if (isNaN(skip) || skip < 0) {
+      return res.status(400).send({ error: "Параметр 'skip' повинен бути невід'ємним числом." });
+    }
   }
 
-  const filteredPosts = posts.filter(post => {
-      return post.idPost > skip;
-  });
+  if (takeC !== undefined && takeC !=='') {
+    take = parseInt(takeC);
+    if (isNaN(take) || take < 0) {
+      return res.status(400).send({ error: "Параметр 'take' повинен бути невід'ємним числом." });
+    }
+  }
 
-  const resultPage = filteredPosts.slice(0, take);
+  let resultPosts = posts.slice(skip);
 
-  res.json({
-      request: { skip, take },
-      data: resultPage,
-      nextAfterId: resultPage.length > 0 ? resultPage[resultPage.length - 1].idPost : null,
-  });
+  if (take !== undefined) {
+    resultPosts = resultPosts.slice(0, take);
+  }
+
+  res.json({resultPosts});
 
   res.status(200).json()
 });
 
 
-app.get("/posts/:id", (req, res)=>{
-  const id = Number(req.query.idPost);
+app.get('/posts/:id', (req, res) => {
+  const postId = parseInt(req.params.id);
 
-  if (isNaN(id)){
-    res.status(404).json('Вказано не число')
-    return;
-  }
+  const post = posts.find(p => p.id === postId);
 
-  res.status(200).json()
-})
+  if (post) {
+    res.json(post);
+  } else {
+    res.status(404).send({
+      error: `Пост з ID ${postId} не знайдено.`
+      });
+    }
 
-app.get("/posts", (reg, res)=>{
-  res.json({allPosts: posts})
-})
+    res.status(200).json()
+});
+
+  
+
 
 app.listen(PORT, HOST, ()=>{
   console.log(`http://${HOST}:${PORT}/posts?skip=2&take=2`)

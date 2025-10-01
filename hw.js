@@ -115,9 +115,8 @@ app.get('/users/:id', (req, res) => {
   if (fieldsToSelect.length === 0) {
     // Копіюємо усі властивості з flist без id у responseObject 
     Object.assign(responseObject, fList);
-  } 
+  } else {
   // ФІльтруємо запит та виводимо тільки ті поля які вказані
-  else {
     // шукаємо чи є поля які вказали в запиті в массиві, і якщо є то додаємо їх у відповідь
     for (const field of fieldsToSelect) {
       if (fList.hasOwnProperty(field)) {
@@ -139,6 +138,6 @@ app.get("/users", (reg, res)=>{
 
 app.listen(PORT, HOST, ()=>{
   console.log(`http://${HOST}:${PORT}/posts?skip=2&take=2`)
-  console.log(`http://${HOST}:${PORT}/user/1?fields=name,email`)
+  console.log(`http://${HOST}:${PORT}/users/1?fields=name,email`)
 })
 

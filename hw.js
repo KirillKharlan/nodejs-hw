@@ -1,6 +1,7 @@
 const express = require('express')
 const path = require('path')
 const fs = require('fs')
+const fsPromises = require("fs/promises")
 const HOST = "127.0.0.1"
 const PORT = 8000
 const app = express()
@@ -34,6 +35,11 @@ const posts = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
 app.get("/timestamp", (req, res)=>{
   res.json({currentTime: currentDate})
 })
+
+
+
+
+
 
 // по запиту /posts якщо не вказано skip та take отримаємо усі пости, якщо вказан skip то пропускаємо стільки постів скільки вказано, якщо вказан take то беремо стільки постів скільки вказано
 app.get('/posts', (req, res) => {
@@ -90,6 +96,10 @@ app.get('/posts/:id', (req, res) => {
 });
 
 
+
+
+
+
 app.get('/users/:id', (req, res) => {
   // Пошук користувача, usersId робимо з id число, userFound шукаємо користувача в масиві
   const usersId = parseInt(req.params.id);
@@ -134,6 +144,42 @@ app.get('/users/:id', (req, res) => {
 app.get("/users", (reg, res)=>{
   res.json({allUsers: users})
 })
+
+
+
+
+
+
+// як на уроці робили думаю розберешся 
+app.post("/posts", async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data.name || !data.postDescription || !data.img) {
+      res.status(422).json("invalid data")
+    }
+
+    const lastUser = users[users.length - 1];
+    let id = 0;
+    if(lastUser) {
+      id = lastUser + 1;
+    }
+
+    const user = { ...data, id: id };
+
+    users.push(user);
+    await fsPromises.writeFile(jsonUsersPath, JSON.stringify(users));
+    res.status(201).json(user);
+    
+  } catch (error) {
+    console.log(error)
+  }
+})
+//
+
+
+
+
 
 
 app.listen(PORT, HOST, ()=>{

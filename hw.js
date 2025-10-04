@@ -150,27 +150,27 @@ app.get("/users", (reg, res)=>{
 
 
 
-// як на уроці робили думаю розберешся 
+// оброьник post для posts в яклму стровюємо нові пости
 app.post("/posts", async (req, res) => {
   try {
     const data = req.body;
-
+    // Оброник який приймає данні з тіла запросу POST, якщи хоча б одного значення немає то виводимо помилку 422
     if (!data.name || !data.postDescription || !data.img) {
       res.status(422).json("invalid data")
     }
-
-    const lastUser = users[users.length - 1];
+    // додаємо новий останній пост за допомогою length - 1 та lastPost + 1
+    const lastPost = posts[posts.length - 1];
     let id = 0;
-    if(lastUser) {
-      id = lastUser + 1;
+    if(lastPost) {
+      id = lastPost + 1;
     }
 
-    const user = { ...data, id: id };
-
-    users.push(user);
-    await fsPromises.writeFile(jsonUsersPath, JSON.stringify(users));
-    res.status(201).json(user);
-    
+    const post = { ...data, id: id };
+    // записуємо новий останній пост до массиву, та відправляємо цей пост разом зі статус кодом 201, повідомляючи що пост успішно додано
+    posts.push(post);
+    await fsPromises.writeFile(jsonPath, JSON.stringify(posts));
+    res.status(201).json(post);
+    // перехватуємо помилку та виводимо її в консоль якщо вона виникає
   } catch (error) {
     console.log(error)
   }

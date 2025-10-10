@@ -1,8 +1,9 @@
-const path = require('path')
-const fs = require('fs')
-const fsPromises = require("fs/promises")
+import path from 'path'
+import fs from 'fs'
+import fsPromises from "fs/promises"
+import { fileURLToPath } from 'url';
 
-
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const jsonUserPath = path.join(__dirname, "../../users.json") 
 const users = JSON.parse(fs.readFileSync(jsonUserPath, 'utf-8'))
 
@@ -17,8 +18,8 @@ const userService = {
     },
 
     //беремо користувача по Id
-    getUserById: (userId, fieldsToSelect) => {
-        const userFound = users.find(user => user.id === userId);
+    getUserById: (userId:number, fieldsToSelect:string | string[]) => {
+        const userFound = users.find((user: { id: number }) => user.id === userId);
 
         if (!userFound) {
             return {
@@ -29,7 +30,7 @@ const userService = {
         }
         const fList = { ...userFound };
         delete fList.id; 
-        const responseObject = {};
+        const responseObject:any = {};
 
         if (fieldsToSelect.length === 0) {
             Object.assign(responseObject, fList);
@@ -50,7 +51,7 @@ const userService = {
 
 };
 
-module.exports = userService;
+export default userService;
 
 
 

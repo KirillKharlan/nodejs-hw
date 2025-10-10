@@ -1,9 +1,11 @@
-const postsService = require("./post.service")
+import type { Request, Response } from 'express'
+import postsService from "./post.service.ts";
+
 
 const postController = {
 
     // беремо усі пости, якщо є парамети skip / take враховуємо їх
-    getAllPosts: (req, res) => {
+    getAllPosts: (req:Request, res:Response) => {
         const skipC = req.query.skip;
         const takeC = req.query.take;
         const filter = req.query.filter;
@@ -18,8 +20,13 @@ const postController = {
     },
 
     // беремо пости по Id
-    getPostsById: (req, res) => {
-        const postId = parseInt(req.params.id);
+    getPostsById: (req:Request, res:Response) => {
+        const postIdParams = req.params.id;
+        if (postIdParams === undefined) {
+            res.status(400).send({ message:"idParams undefined"});
+            return;
+        }
+        const postId = parseInt(postIdParams);
         const responseData = postsService.getPostsById(postId)
         if (responseData.status === 'error') {
             res.status(404).json({ message: responseData.message });
@@ -29,7 +36,7 @@ const postController = {
     },
 
     // створюємо пости
-    createPost: async (req, res) => {
+    createPost: async (req:Request, res:Response) => {
         const data = req.body;
         const responseData = await postsService.createPost(data);
         if (responseData.status === 'error') {
@@ -42,4 +49,4 @@ const postController = {
 
 }
 
-module.exports = postController
+export default postController

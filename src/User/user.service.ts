@@ -1,6 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import fsPromises from "fs/promises"
+import type{ IUser } from "./user.types.ts";
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

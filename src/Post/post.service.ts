@@ -1,19 +1,24 @@
 import fs from 'fs'
 import fsPromises from "fs/promises"
 import path from 'path';
+import type{ IPost, updatePostData } from "./post.types.ts";
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const jsonPath = path.join(__dirname, "../../posts.json") 
-const posts = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
+const posts:IPost[] = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
 
 const postService = {
-    getAllPosts: (skipC:any, takeC:any) => {
+    getAllPosts: (skipC:string, takeC:string) => {
         let skip = 0; 
         let take = undefined;
-        if (skipC !== undefined && skipC !=='') {
 
-            const parsedSkip = parseInt(skipC);
+        const effectiveSkipC = Array.isArray(skipC) ? skipC[0] : skipC;
+        const effectiveTakeC = Array.isArray(takeC) ? takeC[0] : takeC;
+
+        if (effectiveSkipC !== undefined && skipC !=='') {
+
+            const parsedSkip = parseInt(effectiveSkipC);
             
             if (isNaN(parsedSkip) || parsedSkip < 0) {
                 return {
@@ -24,9 +29,9 @@ const postService = {
             skip = parsedSkip;
         }
 
-        if (takeC !== undefined && takeC !=='') {
+        if (effectiveTakeC !== undefined && takeC !=='') {
 
-            const parsedTake = parseInt(takeC);
+            const parsedTake = parseInt(effectiveTakeC);
             
             if (isNaN(parsedTake) || parsedTake < 0) {
                 return {
@@ -85,13 +90,45 @@ const postService = {
                 statusCode: 201
             };
         } catch (error) {
-            console.error("Ошибка записи файла post.service.js:", error);
+            console.error("Помилка запису файла post.service.js:", error);
             return {
                 status: "error",
                 statusCode: 500,
-                message: "Внутренняя ошибка сервера при сохранении поста."
+                message: "Внутрішня помилка сервера при збереженні поста."
             };
         }
+    },
+    // Оновлюємо інформацію про пост
+    updatePost: (postId: number, data: updatePostData): IPost => {
+        if (Object.keys(data).length === 0) {
+            throw new Error(JSON.stringify({ statusCode: 400, message: "Тіло запиту не повинно бути пустим для PATCH-запиту." }));
+        }
+        // перевіряємо чи вказано name та чи його тип string
+        if (data.name !== undefined && typeof data.name !== 'string') {
+            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'name' повинно бути строкою." }));
+        }
+        //перевіряємо чи вказано description та чи його тип string
+        if (data.description !== undefined && typeof data.description !== 'string') {
+            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'description' повинно бути строкою." }));
+        }
+        //перевіряємо чи вказано likes та чи його тип number
+        if (data.likes !== undefined && typeof data.likes !== 'number') {
+            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'likes' повинно бути числом." }));
+        }
+        // перевіряємо чи вказано img та чи його тип string
+        if (data.img !== undefined && typeof data.img !== 'string') {
+            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'img' повинно бути строкою." }));
+        }
+
+        const updatedPost: IPost = {
+            id: postId,
+            name: data.name || "Старе ім'я",
+            description: data.description || "Старий опис",
+            img: data.img || "Старе зображення",
+            likes: data.likes || 0
+        };
+
+        return updatedPost;
     }
 
 

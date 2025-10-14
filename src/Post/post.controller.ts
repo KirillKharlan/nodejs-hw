@@ -1,14 +1,15 @@
 import type { Request, Response } from 'express'
 import postsService from "./post.service.ts";
+import type{ updatePostData } from "./post.types.ts";
 
 
 const postController = {
 
     // беремо усі пости, якщо є парамети skip / take враховуємо їх
     getAllPosts: (req:Request, res:Response) => {
-        const skipC = req.query.skip;
-        const takeC = req.query.take;
-        const filter = req.query.filter;
+        const skipC = String(req.query.skip);
+        const takeC = String(req.query.take);
+        const filter = (req.query.filter);
 
         const responseData = postsService.getAllPosts(skipC, takeC); 
 
@@ -44,9 +45,30 @@ const postController = {
             return;
         }
         res.status(responseData.statusCode).json(responseData.data);
+    },
+
+    // оновлення поста по id
+    updatePostById: (req: Request, res: Response) => {
+        const postIdParams = req.params.id;
+        if (!postIdParams) {
+            res.status(400).json({ message: "ID поста не вказано." });
+            return;
+        }
+
+        const postId = parseInt(postIdParams);
+        if (isNaN(postId)) {
+            res.status(400).json({ message: "ID поста повинен бути числом." });
+            return;
+        }
+        
+        const data = req.body as updatePostData; 
+
+        const updatedPost = postsService.updatePost(postId, data);
+        res.status(200).json(updatedPost);
     }
-
-
 }
+
+
+
 
 export default postController

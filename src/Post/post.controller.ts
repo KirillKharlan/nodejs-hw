@@ -1,43 +1,41 @@
-import type { Request, Response } from 'express'
+import type { Request, Response} from 'express'
 import postsService from "./post.service.ts";
-import type{ updatePostData } from "./post.types.ts";
+import type{ updatePostData, IPostController, IPost} from "./post.types.ts";
 
 
-const postController = {
-
+const postController:IPostController = {
     // беремо усі пости, якщо є парамети skip / take враховуємо їх
-    getAllPosts: (req:Request, res:Response) => {
-        const skipC = String(req.query.skip);
-        const takeC = String(req.query.take);
-        const filter = (req.query.filter);
+    getAllPosts: (req, res) => {
+        const skipC = req.query.skip as string | undefined;
+        const takeC = req.query.take as string | undefined;
 
-        const responseData = postsService.getAllPosts(skipC, takeC); 
+        const responseData = postsService.getAllPosts(skipC, takeC);
 
         if (responseData.status === 'error') {
             res.status(400).json({ message: responseData.message });
-            return
+            return;
         }
         res.status(200).json(responseData.data);
     },
 
     // беремо пости по Id
-    getPostsById: (req:Request, res:Response) => {
+    getPostsById: (req, res) => {
         const postIdParams = req.params.id;
         if (postIdParams === undefined) {
-            res.status(400).send({ message:"idParams undefined"});
+            res.status(400).send({ message: "idParams undefined" });
             return;
         }
         const postId = parseInt(postIdParams);
-        const responseData = postsService.getPostsById(postId)
+        const responseData = postsService.getPostsById(postId);
         if (responseData.status === 'error') {
             res.status(404).json({ message: responseData.message });
-            return
+            return;
         }
-        res.status(200).json(responseData.data); 
+        res.status(200).json(responseData.data);
     },
 
     // створюємо пости
-    createPost: async (req:Request, res:Response) => {
+    createPost: async (req, res) => {
         const data = req.body;
         const responseData = await postsService.createPost(data);
         if (responseData.status === 'error') {
@@ -48,24 +46,26 @@ const postController = {
     },
 
     // оновлення поста по id
-    updatePostById: (req: Request, res: Response) => {
+    updatePostById: (req, res) => {
         const postIdParams = req.params.id;
-        if (!postIdParams) {
-            res.status(400).json({ message: "ID поста не вказано." });
+        if (!postIdParams === undefined) {
+            res.status(400).send({ message: "id поста не вказано" });
             return;
         }
-
         const postId = parseInt(postIdParams);
         if (isNaN(postId)) {
-            res.status(400).json({ message: "ID поста повинен бути числом." });
+            res.status(400).json({ message: "id поста повинен бути числом" });
             return;
         }
-        
-        const data = req.body as updatePostData; 
 
-        const updatedPost = postsService.updatePost(postId, data);
-        res.status(200).json(updatedPost);
-    }
+        const data = req.body as updatePostData;
+        const responseData = postsService.updatePost(postId, data);
+        if (responseData.status === 'error') {
+            res.status(responseData.statusCode).json({ message: responseData.message });
+            return;
+        }
+        res.status(responseData.statusCode).json(responseData.data);
+    },
 }
 
 

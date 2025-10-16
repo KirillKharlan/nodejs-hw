@@ -1,7 +1,7 @@
 import fs from 'fs'
 import fsPromises from "fs/promises"
 import path from 'path';
-import type{ IPost, updatePostData } from "./post.types.ts";
+import type{ IPost, updatePostData, createPostData, ServiceResponse } from "./post.types.ts";
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -9,7 +9,7 @@ const jsonPath = path.join(__dirname, "../../posts.json")
 const posts:IPost[] = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
 
 const postService = {
-    getAllPosts: (skipC:string, takeC:string) => {
+    getAllPosts: (skipC?:string, takeC?:string):ServiceResponse<IPost[]> => {
         let skip = 0; 
         let take = undefined;
 
@@ -22,7 +22,8 @@ const postService = {
             
             if (isNaN(parsedSkip) || parsedSkip < 0) {
                 return {
-                    status: "error",
+                    status: "error",                    
+                    statusCode: 400,
                     message: "Параметр 'skip' повинен бути невід'ємним числом." 
                 };
             }
@@ -36,6 +37,7 @@ const postService = {
             if (isNaN(parsedTake) || parsedTake < 0) {
                 return {
                     status:"error",
+                    statusCode: 400,
                     message:"Параметр 'take' повинен бути невід'ємним числом."
                 };
             }
@@ -50,26 +52,29 @@ const postService = {
 
         return {
             status: "success",
+            statusCode: 200,
             data: resultPosts
         };
 
     },
     
-    getPostsById: (postId:number) => {
-    const post = posts.find((p: { id: number }) => p.id === postId); 
-        if (post) {
+    getPostsById: (postId:number):ServiceResponse<IPost> => {
+    const post = posts.find(p => p.id === postId); 
+        if (!post) {
             return {
-                status: "success",
-                data: post
+                status: "error",
+                statusCode: 404,
+                message: `Пост з ID ${postId} не знайдено.`
             };
         } 
         return {
-            status: "error",
-            message: `Пост з ID ${postId} не знайдено.`,
+            status: "success",
+            statusCode: 200,
+            data: post,
         };
     },
 
-    createPost: async (data:any) => {
+    createPost: async (data:any):Promise<ServiceResponse<IPost>> => {
         if (!data.name || !data.postDescription || !data.img) {
             return {
                 status: "error",
@@ -99,36 +104,19 @@ const postService = {
         }
     },
     // Оновлюємо інформацію про пост
-    updatePost: (postId: number, data: updatePostData): IPost => {
+    updatePost: (postId: number, data: updatePostData): ServiceResponse<IPost> => {
+        const postIndex = posts.findIndex(p => p.id === postId);
+        
+        if (postIndex === -1) {
+            return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
+        }
         if (Object.keys(data).length === 0) {
-            throw new Error(JSON.stringify({ statusCode: 400, message: "Тіло запиту не повинно бути пустим для PATCH-запиту." }));
-        }
-        // перевіряємо чи вказано name та чи його тип string
-        if (data.name !== undefined && typeof data.name !== 'string') {
-            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'name' повинно бути строкою." }));
-        }
-        //перевіряємо чи вказано description та чи його тип string
-        if (data.description !== undefined && typeof data.description !== 'string') {
-            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'description' повинно бути строкою." }));
-        }
-        //перевіряємо чи вказано likes та чи його тип number
-        if (data.likes !== undefined && typeof data.likes !== 'number') {
-            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'likes' повинно бути числом." }));
-        }
-        // перевіряємо чи вказано img та чи його тип string
-        if (data.img !== undefined && typeof data.img !== 'string') {
-            throw new Error(JSON.stringify({ statusCode: 400, message: "Поле 'img' повинно бути строкою." }));
+            return { status: 'error', statusCode: 400, message: "Тіло запиту не може бути пустим." };
         }
 
-        const updatedPost: IPost = {
-            id: postId,
-            name: data.name || "Старе ім'я",
-            description: data.description || "Старий опис",
-            img: data.img || "Старе зображення",
-            likes: data.likes || 0
-        };
-
-        return updatedPost;
+        const updatedPost = { ...posts[postIndex], ...data }as IPost;
+        
+        return { status: 'success', statusCode: 200, data: updatedPost };
     }
 
 

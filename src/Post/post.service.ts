@@ -74,8 +74,8 @@ const postService = {
         };
     },
 
-    createPost: async (data:any):Promise<ServiceResponse<IPost>> => {
-        if (!data.name || !data.postDescription || !data.img) {
+    createPost: async (data:createPostData):Promise<ServiceResponse<IPost>> => {
+        if (!data.name || !data.description || !data.img) {
             return {
                 status: "error",
                 statusCode: 422,

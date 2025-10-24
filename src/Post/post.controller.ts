@@ -1,9 +1,9 @@
 import type { Request, Response} from 'express'
 import postsService from "./post.service.ts";
-import type{ updatePostData, IPostController, IPost} from "./post.types.ts";
+import type{ UpdatePostChecked, PostController, Post} from "./post.types.ts";
 
 
-const postController:IPostController = {
+const postController:PostController = {
     // беремо усі пости, якщо є парамети skip / take враховуємо їх
     getAllPosts: (req, res) => {
         const skipC = req.query.skip as string | undefined;
@@ -58,8 +58,28 @@ const postController:IPostController = {
             return;
         }
 
-        const data = req.body as updatePostData;
+        const data = req.body as UpdatePostChecked;
         const responseData = postsService.updatePost(postId, data);
+        if (responseData.status === 'error') {
+            res.status(responseData.statusCode).json({ message: responseData.message });
+            return;
+        }
+        res.status(responseData.statusCode).json(responseData.data);
+    },
+
+    //видалення поста по id
+    deletePostById: async (req, res) => {
+        const postIdParams = req.params.id;
+        if (postIdParams === undefined) {
+            res.status(400).send({ message: "id поста не вказано" });
+            return;
+        }
+        const postId = parseInt(postIdParams);
+        if (isNaN(postId)) {
+            res.status(400).json({ message: "id поста повинен бути числом" });
+            return;
+        }
+        const responseData = await postsService.deletePost(postId);
         if (responseData.status === 'error') {
             res.status(responseData.statusCode).json({ message: responseData.message });
             return;

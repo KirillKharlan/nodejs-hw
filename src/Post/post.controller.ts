@@ -1,15 +1,15 @@
 import type { Request, Response} from 'express'
 import postsService from "./post.service.ts";
-import type{ UpdatePostChecked, PostController, Post} from "./post.types.ts";
+import type{ UpdatePostChecked, IPostController, Post} from "./post.types.ts";
 
 
-const postController:PostController = {
+const postController:IPostController = {
     // беремо усі пости, якщо є парамети skip / take враховуємо їх
-    getAllPosts: (req, res) => {
+    getAllPosts: async (req, res) => {
         const skipC = req.query.skip as string | undefined;
         const takeC = req.query.take as string | undefined;
 
-        const responseData = postsService.getAllPosts(skipC, takeC);
+        const responseData = await postsService.getAllPosts(skipC, takeC);
 
         if (responseData.status === 'error') {
             res.status(400).json({ message: responseData.message });
@@ -19,14 +19,14 @@ const postController:PostController = {
     },
 
     // беремо пости по Id
-    getPostsById: (req, res) => {
+    getPostsById: async (req, res) => {
         const postIdParams = req.params.id;
         if (postIdParams === undefined) {
             res.status(400).send({ message: "idParams undefined" });
             return;
         }
         const postId = parseInt(postIdParams);
-        const responseData = postsService.getPostsById(postId);
+        const responseData = await postsService.getPostsById(postId);
         if (responseData.status === 'error') {
             res.status(404).json({ message: responseData.message });
             return;
@@ -46,7 +46,7 @@ const postController:PostController = {
     },
 
     // оновлення поста по id
-    updatePostById: (req, res) => {
+    updatePostById: async (req, res) => {
         const postIdParams = req.params.id;
         if (!postIdParams === undefined) {
             res.status(400).send({ message: "id поста не вказано" });
@@ -59,7 +59,7 @@ const postController:PostController = {
         }
 
         const data = req.body as UpdatePostChecked;
-        const responseData = postsService.updatePost(postId, data);
+        const responseData = await postsService.updatePost(postId, data);
         if (responseData.status === 'error') {
             res.status(responseData.statusCode).json({ message: responseData.message });
             return;
@@ -87,8 +87,6 @@ const postController:PostController = {
         res.status(responseData.statusCode).json(responseData.data);
     },
 }
-
-
 
 
 export default postController

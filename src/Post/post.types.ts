@@ -25,6 +25,9 @@ export type UpdatePostChecked = Prisma.PostUpdateInput
 
 export type SimplePost = Omit<Post, 'tags'>;
 
+
+
+
 interface SuccessResponse<T> {
     status: 'success';
     statusCode: number;
@@ -43,7 +46,7 @@ export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
 
 type errorMessage = { message: string };
 
-export interface PostController {
+export interface IPostController {
     getAllPosts: (
         req: Request<{}, unknown, {}, {skip?: string, take?: string }>, 
         res: Response<SimplePost[] | errorMessage>
@@ -69,4 +72,18 @@ export interface PostController {
     ) => Promise<void>;
 }
 
-export default Post
+
+export interface IRepositoryContract {
+    getAll: (skip?: number, take?: number
+    ) => Promise<Post[]>
+	getById: (
+        id: number
+    ) => Promise<Post | null>
+	create: (
+        data: CreatePost
+    ) => Promise<Post | null>
+	update: (
+        id: number, data: UpdatePost
+    ) => Promise<Post | null>
+}
+

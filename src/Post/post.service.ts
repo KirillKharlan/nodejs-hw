@@ -1,101 +1,94 @@
-import fs from 'fs'
-import fsPromises from "fs/promises"
-import path from 'path';
-import type{ Post, UpdatePostChecked, CreatePostChecked, ServiceResponse } from "./post.types.ts";
-import { fileURLToPath } from 'url';
+import { postRepository } from './post.repository.ts'; 
+import type { 
+    Post, 
+    UpdatePostChecked, 
+    CreatePostChecked, 
+    ServiceResponse, 
+    PostWithTags, 
+    SimplePost
+} from './post.types.ts'; 
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const jsonPath = path.join(__dirname, "../../posts.json") 
-const posts:Post[] = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
+type PostServiceResponse<T> = Promise<ServiceResponse<T>>;
 
-const postService = {
-    getAllPosts: (skipC?:string, takeC?:string):ServiceResponse<Post[]> => {
-        let skip = 0; 
-        let take = undefined;
 
-        const effectiveSkipC = Array.isArray(skipC) ? skipC[0] : skipC;
-        const effectiveTakeC = Array.isArray(takeC) ? takeC[0] : takeC;
-
-        if (effectiveSkipC !== undefined && skipC !=='') {
-
-            const parsedSkip = parseInt(effectiveSkipC);
-            
-            if (isNaN(parsedSkip) || parsedSkip < 0) {
-                return {
-                    status: "error",                    
-                    statusCode: 400,
-                    message: "Параметр 'skip' повинен бути невід'ємним числом." 
-                };
+export const postService = {
+    getAllPosts: async (skipC?: string, takeC?: string): PostServiceResponse<PostWithTags[]> => {
+        let skip: number | undefined = undefined; 
+        let take: number | undefined = undefined;
+    if (skipC !== undefined && skipC !=='') {
+            const parsedSkip = parseInt(skipC);
+            if (isNaN(parsedSkip) && parsedSkip < 0) {
+                return { status: "error", statusCode: 400, message: "Параметр 'skip' повинен бути невід'ємним числом." };
             }
             skip = parsedSkip;
         }
-
-        if (effectiveTakeC !== undefined && takeC !=='') {
-
-            const parsedTake = parseInt(effectiveTakeC);
-            
-            if (isNaN(parsedTake) || parsedTake < 0) {
-                return {
-                    status:"error",
-                    statusCode: 400,
-                    message:"Параметр 'take' повинен бути невід'ємним числом."
-                };
+        if (takeC !== undefined && takeC !=='') {
+            const parsedTake = parseInt(takeC);
+            if (isNaN(parsedTake) && parsedTake < 0) {
+                return { status: "error", statusCode: 400, message: "Параметр 'take' повинен бути невід'ємним числом." };
             }
             take = parsedTake;
         }
-
-        let resultPosts = posts.slice(skip);
-
-        if (take !== undefined) {
-            resultPosts = resultPosts.slice(0, take);
-        }
-
-        return {
-            status: "success",
-            statusCode: 200,
-            data: resultPosts
-        };
-
-    },
-    
-    getPostsById: (postId:number):ServiceResponse<Post> => {
-    const post = posts.find(p => p.id === postId); 
-        if (!post) {
+        try {
+            const resultPosts = await postRepository.getAll(skip, take);
+            return {
+                status: "success",
+                statusCode: 200,
+                data: resultPosts as PostWithTags[]
+            };
+        } catch (error) {
+            console.error("Помилка при отриманні постів:", error);
             return {
                 status: "error",
-                statusCode: 404,
-                message: `Пост з ID ${postId} не знайдено.`
+                statusCode: 500,
+                message: "Внутрішня помилка сервера при отриманні постів."
             };
-        } 
-        return {
-            status: "success",
-            statusCode: 200,
-            data: post,
-        };
+        }
+    },
+    getPostsById: async (postId: number): PostServiceResponse<Post> => {
+        try {
+            const post = await postRepository.getById(postId);
+
+            if (!post) {
+                return {
+                    status: "error",
+                    statusCode: 404,
+                    message: `Пост з ID ${postId} не знайдено.`,
+                };
+            } 
+            return {
+                status: "success",
+                statusCode: 200,
+                data: post,
+            };
+        } catch (error) {
+             console.error("Помилка при отриманні поста:", error);
+             return { status: "error", statusCode: 500, message: "Внутрішня помилка сервера." };
+        }
     },
 
-    createPost: async (data:CreatePostChecked):Promise<ServiceResponse<Post>> => {
-        if (!data.name || !data.description || !data.img) {
-            return {
+    createPost: async (data: CreatePostChecked): PostServiceResponse<Post> => {
+        if (!data.name && !data.postDescription && !data.img) {
+             return {
                 status: "error",
                 statusCode: 422,
                 message: "Необхідні поля 'name', 'postDescription' та 'img' не заповнені."
             };
         }
-        const lastPost = posts[posts.length - 1];
-        const newId = lastPost ? lastPost.id + 1 : 1; 
-        const newPost = { ...data, id: newId };
+
         try {
-            posts.push(newPost);
-            await fsPromises.writeFile(jsonPath, JSON.stringify(posts, null, 2));
+            const newPost = await postRepository.create(data);
             
             return {
                 status: "success",
                 data: newPost,
                 statusCode: 201
             };
-        } catch (error) {
-            console.error("Помилка запису файла post.service.js:", error);
+        } catch (error: any) {
+            console.error("Помилка при створенні поста:", error);
+            if (error.code === 'P2002') {
+                 return { status: "error", statusCode: 409, message: "Пост з таким ім'ям вже існує." };
+            }
             return {
                 status: "error",
                 statusCode: 500,
@@ -103,48 +96,46 @@ const postService = {
             };
         }
     },
-    // Оновлюємо інформацію про пост
-    updatePost: (postId: number, data: UpdatePostChecked): ServiceResponse<Post> => {
-        const postIndex = posts.findIndex(p => p.id === postId);
-        
-        if (postIndex === -1) {
-            return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
-        }
+
+    updatePost: async (postId: number, data: UpdatePostChecked): PostServiceResponse<Post> => {
         if (Object.keys(data).length === 0) {
             return { status: 'error', statusCode: 400, message: "Тіло запиту не може бути пустим." };
         }
 
-        const updatedPost = { ...posts[postIndex], ...data }as Post;
-        
-        return { status: 'success', statusCode: 200, data: updatedPost };
-    },
-    // Видаляємо пост
-    deletePost: async (postId: number): Promise<ServiceResponse<Post>> => {
-        const postIndex = posts.findIndex(p => p.id === postId);
-        if (postIndex === -1) {
-            return { 
-                status: 'error', 
-                statusCode: 404, 
-                message: `Пост з ID ${postId} не знайдено.` 
-            };
-        }
-        const [deletedPost] = posts.splice(postIndex, 1) as [Post];
         try {
-            await fsPromises.writeFile(jsonPath, JSON.stringify(posts, null, 2));
+            const updatedPost = await postRepository.update(postId, data);
+            
+            return { status: 'success', statusCode: 200, data: updatedPost };
+            
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                 return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.`};
+            }
+            console.error("Помилка при оновленні поста:", error);
+            return { status: 'error', statusCode: 500, message: "Внутрішня помилка сервера." };
+        }
+    },
+    deletePost: async (postId: number): PostServiceResponse<Post> => {
+        try {
+            const deletedPost = await postRepository.delete(postId);
+            
             return { 
                 status: 'success', 
                 statusCode: 200, 
                 data: deletedPost 
             };
-        } catch (error) {
-            console.error("Помилка запису файла post.service.js після видалення:", error);
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                 return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
+            }
+            console.error("Помилка при видаленні поста:", error);
             return {
                 status: "error",
                 statusCode: 500,
                 message: "Внутрішня помилка сервера при видаленні поста."
             };
         }
-    }  
+    }
 } 
 
-export default postService
+export default postService;

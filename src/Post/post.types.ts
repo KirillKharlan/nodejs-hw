@@ -44,7 +44,7 @@ interface ErrorResponse {
 
 export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
 
-type errorMessage = { message: string };
+export type errorMessage = { message: string };
 
 export interface IPostController {
     getAllPosts: (

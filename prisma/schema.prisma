@@ -21,6 +21,8 @@ model Post {
   img             String
   likes           Int
   tags            PosTag[]
+  categoryId      Int?
+  category        Category? @relation(fields: [categoryId], references: [id])
 }
 
 model Tag {
@@ -35,4 +37,11 @@ model PosTag {
   tagName    String
 
   @@id([postId, tagName])
+}
+
+model Category {
+  id          Int @unique @default(autoincrement()) @id
+  name        String @unique
+  description String?
+  posts       Post[]
 }

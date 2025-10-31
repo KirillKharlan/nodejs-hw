@@ -1,7 +1,3 @@
-// import { client } from "../client/client.ts"
-// import { Prisma } from "../generated/prisma/index.js";
-// import { CreatePost, IRepositoryContract, Post } from "./post.types.ts";
-
 import { client } from "../client/client.ts"
 import type { Post, CreatePost, UpdatePost, IRepositoryContract } from './post.types.ts';
 

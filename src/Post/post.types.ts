@@ -81,9 +81,12 @@ export interface IRepositoryContract {
     ) => Promise<Post | null>
 	create: (
         data: CreatePost
-    ) => Promise<Post | null>
+    ) => Promise<Post>
 	update: (
         id: number, data: UpdatePost
-    ) => Promise<Post | null>
+    ) => Promise<Post>
+    delete: (
+        id: number
+    ) => Promise<Post>
 }
 

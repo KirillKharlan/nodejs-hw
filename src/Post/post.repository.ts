@@ -1,9 +1,9 @@
 import { client } from "../client/client.ts"
+import { Prisma } from "../generated/prisma/index.js";
 import type { Post, CreatePost, UpdatePost, IRepositoryContract } from './post.types.ts';
 
-class PostRepository implements IRepositoryContract {
-    [x: string]: any;
-    async getAll(skip?: number, take?: number): Promise<Post[]> {
+export const postRepository: IRepositoryContract = {
+    getAll: async(skip?: number, take?: number): Promise<Post[]> => {
         const args: { skip?: number, take?: number, include: any }={
             include: {
                 tags: true
@@ -17,8 +17,9 @@ class PostRepository implements IRepositoryContract {
         }
         const posts = await client.post.findMany(args);
         return posts as Post[];
-    }
-    async getById(id: number): Promise<Post | null> {
+        
+    },
+    getById: async(id: number): Promise<Post | null> => {
         const post = await client.post.findUnique({
             where: { id },
             include: { 
@@ -26,8 +27,8 @@ class PostRepository implements IRepositoryContract {
             }
         });
         return post as Post | null;
-    }
-    async create(data: CreatePost): Promise<Post> {
+    },
+    create: async(data: CreatePost): Promise<Post> => {
         const newPost = await client.post.create({
             data: data,
             include: { 
@@ -35,8 +36,8 @@ class PostRepository implements IRepositoryContract {
             }
         });
         return newPost as Post;
-    }
-    async update(id: number, data: UpdatePost): Promise<Post> {
+    },
+    update: async(id: number, data: UpdatePost): Promise<Post> => {
         const updatedPost = await client.post.update({
             where: { id },
             data: data,
@@ -45,8 +46,8 @@ class PostRepository implements IRepositoryContract {
             }
         });
         return updatedPost as Post;
-    }
-    async delete(id: number): Promise<Post> {
+    },
+    delete: async(id: number): Promise<Post> =>{
         const deletedPost = await client.post.delete({
             where: { id },
             include: { 
@@ -58,5 +59,4 @@ class PostRepository implements IRepositoryContract {
     
 }
 
-
-export const postRepository = new PostRepository();
+export default postRepository

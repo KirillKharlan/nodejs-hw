@@ -1,8 +1,8 @@
 import { client } from "../client/client.ts"
 import type { Tag, ITagRepositoryContract } from './tag.types.ts';
 
-class TagRepository implements ITagRepositoryContract {
-    async getAll(skip?: number, take?: number): Promise<Tag[]> {
+export const tagRepository: ITagRepositoryContract = {
+    getAll: async(skip?: number, take?: number): Promise<Tag[]> => {
         const args: { skip?: number, take?: number } = {};
 
         if (skip !== undefined){
@@ -16,8 +16,8 @@ class TagRepository implements ITagRepositoryContract {
         const tags = await client.tag.findMany(args);
         
         return tags as Tag[];
-    }
-    async getByName(name: string): Promise<Tag | null> {
+    },
+    getByName: async(name: string): Promise<Tag | null> => {
         const tag = await client.tag.findUnique({
             where: { name },
         });
@@ -25,5 +25,5 @@ class TagRepository implements ITagRepositoryContract {
     }
 }
 
-export const tagRepository = new TagRepository();
+export default tagRepository
 

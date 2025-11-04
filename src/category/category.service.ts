@@ -1,4 +1,4 @@
-import { categoryRepository } from './category.repository.ts'; 
+import { CategoryRepository } from './category.repository.ts'; 
 import type { Category, CreateCategory, ServiceResponse } from './category.types.ts'; 
 
 type CategoryServiceResponse<T> = Promise<ServiceResponse<T>>;
@@ -23,7 +23,7 @@ export const categoryService = {
             take = parsedTake;
         }
         try {
-            const result = await categoryRepository.getAll(skip, take);
+            const result = await CategoryRepository.getAll(skip, take);
             return { status: "success", statusCode: 200, data: result };
         } catch (error) {
             console.error("Помилка при отриманні категорій:", error);
@@ -33,7 +33,7 @@ export const categoryService = {
     
     getCategoryById: async (id: number): CategoryServiceResponse<Category> => {
         try {
-            const category = await categoryRepository.getById(id);
+            const category = await CategoryRepository.getById(id);
             if (!category) {
                 return { status: "error", statusCode: 404, message: `Категорію з ID ${id} не знайдено.` };
             } 
@@ -49,7 +49,7 @@ export const categoryService = {
              return { status: "error", statusCode: 422, message: "Поле 'name' є обов'язковим." };
         }
         try {
-            const newCategory = await categoryRepository.create(data);
+            const newCategory = await CategoryRepository.create(data);
             return { status: "success", data: newCategory, statusCode: 201 };
         } catch (error: any) {
             console.error("Помилка при створенні категорії:", error);

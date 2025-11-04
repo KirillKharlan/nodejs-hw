@@ -87,7 +87,7 @@ export const postService = {
         } catch (error: any) {
             console.error("Помилка при створенні поста:", error);
             if (error.code === 'P2002') {
-                 return { status: "error", statusCode: 409, message: "Пост з таким ім'ям вже існує." };
+                return { status: "error", statusCode: 409, message: "Пост з таким ім'ям вже існує." };
             }
             return {
                 status: "error",
@@ -96,17 +96,13 @@ export const postService = {
             };
         }
     },
-
     updatePost: async (postId: number, data: UpdatePostChecked): PostServiceResponse<Post> => {
         if (Object.keys(data).length === 0) {
             return { status: 'error', statusCode: 400, message: "Тіло запиту не може бути пустим." };
         }
-
         try {
             const updatedPost = await postRepository.update(postId, data);
-            
             return { status: 'success', statusCode: 200, data: updatedPost };
-            
         } catch (error: any) {
             if (error.code === 'P2025') {
                  return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.`};
@@ -118,7 +114,6 @@ export const postService = {
     deletePost: async (postId: number): PostServiceResponse<Post> => {
         try {
             const deletedPost = await postRepository.delete(postId);
-            
             return { 
                 status: 'success', 
                 statusCode: 200, 
@@ -136,6 +131,6 @@ export const postService = {
             };
         }
     }
-} 
+}
 
 export default postService;

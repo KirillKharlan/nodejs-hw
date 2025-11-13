@@ -1,68 +1,59 @@
-import path from 'path'
-import fs from 'fs'
-import fsPromises from "fs/promises"
-import type{ IUser } from "./user.types.ts";
-import { fileURLToPath } from 'url';
+import { userRepository } from './user.repository.ts'; 
+import type { User, RegisterInput, LoginInput, ServiceResponse } from './user.types.ts';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const jsonUserPath = path.join(__dirname, "../../users.json") 
-const users = JSON.parse(fs.readFileSync(jsonUserPath, 'utf-8'))
 
-const userService = {
+type UserServiceResponse<T> = Promise<ServiceResponse<T>>;
 
-    // беремо усіх користувачів
-    getAllUsers: () => {
-        return {
-            status: "success",
-            data: { allUsers: users }
-        };
-    },
 
-    //беремо користувача по Id
-    getUserById: (userId:number, fieldsToSelect:string | string[]) => {
-        const userFound = users.find((user: { id: number }) => user.id === userId);
-
-        if (!userFound) {
-            return {
-                status: "error",
-                statusCode: 404,
-                message: `Користувача з ID ${userId} не знайдено.`
-            };
+export const userService = {
+    registerUser: async (data: RegisterInput): UserServiceResponse<User> => {
+        if (!data.email || !data.password) {
+            return { status: "error", statusCode: 422, message: "Email та пароль є обов'язковими." };
         }
-        const fList = { ...userFound };
-        delete fList.id; 
-        const responseObject:any = {};
-
-        if (fieldsToSelect.length === 0) {
-            Object.assign(responseObject, fList);
-        } else {
-            for (const field of fieldsToSelect) {
-                if (fList.hasOwnProperty(field)) {
-                    responseObject[field] = fList[field];
-                }
+        try {
+            const existingUser = await userRepository.findByEmail(data.email);
+            if (existingUser) {
+                return { status: "error", statusCode: 409, message: "Користувач з таким email вже зареєстрований." };
             }
+            const newUser = await userRepository.register(data);
+            return {
+                status: "success",
+                statusCode: 201,
+                data: newUser,
+                message: "Реєстрація успішна!"
+            };
+        } catch (error: any) {
+            console.error("Помилка при реєстрації:", error);
+            return { status: "error", statusCode: 500, message: "Внутрішня помилка сервера." };
         }
-
-        return {
-            status: "success",
-            statusCode: 200,
-            data: responseObject
-        };
     },
+    loginUser: async (data: LoginInput): UserServiceResponse<{ message: string }> => {
+        if (!data.email || !data.password) {
+            return { status: "error", statusCode: 422, message: "Email та пароль є обов'язковими." };
+        }
+        try {
+            const user = await userRepository.findByEmail(data.email);
+            if (!user) {
+                return { status: "error", statusCode: 401, message: "Неправильний email або пароль." };
+            }
+            const isPasswordValid = (data.password === user.password);
+            if (!isPasswordValid) {
+                 return { status: "error", statusCode: 401, message: "Неправильний email або пароль." };
+            }
+            return {
+                status: "success",
+                statusCode: 200,
+                data: { message: "Авторизація успішна! (Далі тут має бути токен)" }
+            };
+        } catch (error) {
+            console.error("Помилка при авторизації:", error);
+            return { status: "error", statusCode: 500, message: "Внутрішня помилка сервера." };
+        }
+    }
+} 
 
-};
 
 export default userService;
-
-
-
-
-
-
-
-
-
-
 
 
 

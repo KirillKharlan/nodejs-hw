@@ -18,7 +18,8 @@ app.use(categoryRouter)
 
 app.listen(PORT, HOST, ()=>{
   console.log(`http://${HOST}:${PORT}/posts?skip=2&take=2`)
-  console.log(`http://${HOST}:${PORT}/users/1?fields=name,email`)
   console.log(`http://${HOST}:${PORT}/tags`)
   console.log(`http://${HOST}:${PORT}/categories`)
+  console.log(`http://${HOST}:${PORT}/login`)
+  console.log(`http://${HOST}:${PORT}/register`)
 })

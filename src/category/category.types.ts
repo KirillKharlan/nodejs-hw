@@ -25,17 +25,13 @@ interface SuccessResponse<T> {
     data: T;
     message?: string;
 }
-
 interface ErrorResponse {
     status: 'error';
     statusCode: number;
     message: string;
     data?: never;
 }
-
-
 export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
-
 export type errorMessage = { message: string };
 
 

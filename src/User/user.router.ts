@@ -1,6 +1,10 @@
-import express, { Router } from 'express'
-import userController from './user.controller.ts'
-const router:Router = express.Router()
-router.get("/users/:id", userController.getUserById)
-router.get("/users", userController.getAllUsers)
-export default router
+import { Router } from 'express';
+import userController from './user.controller.ts';
+
+
+const userRouter = Router();
+userRouter.post('/register', userController.registerUser);
+userRouter.post('/login', userController.loginUser); 
+
+
+export default userRouter;

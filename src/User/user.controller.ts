@@ -1,33 +1,50 @@
-import type { Request, Response } from 'express'
-import userService from "./user.service.ts";
-import type { 
-    IUserController, 
-    RegisterInput, 
-    LoginInput, 
-    User, 
-    errorMessage 
-} from "./user.types.ts";
+import type { IControllerContract } from "./user.types.ts";
+import { userService } from "./user.service.ts";
+import jwt from "jsonwebtoken";
+import { ENV } from "../config/env.ts";
 
 
-const userController: IUserController = {
-    registerUser: async (req: Request<{}, User | errorMessage, RegisterInput>, res: Response<User | errorMessage>) => {
-        const data = req.body as RegisterInput;
-        const responseData = await userService.registerUser(data);
-        if (responseData.status === 'error') {
-            res.status(responseData.statusCode).json({ message: responseData.message });
+export const userController: IControllerContract = {
+    register: async(req, res) => {
+        const dataUser = req.body
+        const response = await userService.createUser(dataUser)
+        if (response === "Error. User didn`t create"){
+            res.status(400).json(response)
+        }
+        res.status(200).json(response)
+    },
+    login: async(req, res)=> {
+        const dataUser = req.body;
+        const response = await userService.findUserByEmail(dataUser)
+        if (response === "Can't find user"){
+            res.status(404).json(response)
+        }
+        res.status(200).json(response)
+    },
+    me: async(req, res) => {
+        const headers = req.headers.authorization
+        if (!headers){
+            res.status(401).json("Authorization is required!");
             return;
         }
-        res.status(responseData.statusCode).json(responseData.data as User);
-    },
-    loginUser: async (req: Request<{}, { message: string } | errorMessage, LoginInput>, res: Response<{ message: string } | errorMessage>) => {
-        const data = req.body as LoginInput;
-        const responseData = await userService.loginUser(data);
-        if (responseData.status === 'error') {
-            res.status(responseData.statusCode).json({ message: responseData.message });
+        const [ typeToken, token ] = headers.split(" ");
+        console.log()
+        if (typeToken !== "Bearer" || !token){
+            res.status(401).json("Invalid authorization!");
             return;
         }
-        res.status(responseData.statusCode).json(responseData.data);
-    },
+        try{
+            const decodedToken = jwt.verify(token, ENV.SECRET_KEY) as {id: number}
+            const me = await userService.me(decodedToken.id)
+            if (typeof me === "string"){
+                res.status(404).json("User doesn`t exist!")
+                return;
+            }
+            res.status(200).json(me)
+        }catch(error){
+            res.status(400).json("Error when decoding token")
+        }
+
+    }
 }
-
 export default userController

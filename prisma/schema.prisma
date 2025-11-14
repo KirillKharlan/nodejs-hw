@@ -14,15 +14,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Post {
   id              Int @unique @default(autoincrement()) @id
   name            String
   postDescription String
   img             String
   likes           Int
+  
+
+  createdById     Int      
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  
+  likedBy         PostLike[]
+
   tags            PosTag[]
   categoryId      Int?
   category        Category? @relation(fields: [categoryId], references: [id])
+}
+
+model User {
+  id         Int @unique @default(autoincrement()) @id
+  firstName  String    
+  secondName String
+  email      String @unique
+  avatar     String @unique
+  password   String @unique
+  isAdmin    Boolean @default(false)
+
+
+  createdPosts Post[] 
+
+  likedPosts PostLike[]
+}
+
+model PostLike {
+  userId Int
+  postId Int
+
+
+  user User @relation(fields: [userId], references: [id])
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@id([userId, postId])
 }
 
 model Tag {
@@ -33,6 +68,7 @@ model Tag {
 model PosTag {
   post       Post @relation(fields: [postId], references: [id])
   postId     Int
+
   tag        Tag @relation(fields: [tagName], references: [name])
   tagName    String
 
@@ -43,12 +79,6 @@ model Category {
   id          Int @unique @default(autoincrement()) @id
   name        String @unique
   description String?
+  
   posts       Post[]
-}
-
-model User {
-  id Int @unique @default(autoincrement()) @id 
-  email String @unique 
-  password String
-  name String?
 }

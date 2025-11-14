@@ -1,10 +1,10 @@
-import { IUserRepositoryContract, RegisterInput, User } from "./user.types.ts";
-import { client } from "../client/client.ts"
+import type { IRepositoryContract } from "./user.types.ts";
+import { client } from "../client/client.ts";
 import { Prisma } from "../generated/prisma/index.js";
 
 
-export const userRepository: IUserRepositoryContract = {
-    register: async (data: RegisterInput): Promise<User> => {
+export const userRepository: IRepositoryContract = {
+    createUser: async (data) => {
         try{
             const createdUser = await client.user.create({
                 data: data
@@ -35,22 +35,29 @@ export const userRepository: IUserRepositoryContract = {
             throw error
         }
     },
-    findByEmail: async (email: string) => {
+    findUserByEmail: async (email) => {
         try{
             const foundedUser = await client.user.findUnique({where: {
                 email: email
             }})
             return foundedUser;
         }catch(error){
-            if (error instanceof Prisma.PrismaClientKnownRequestError) {
-                if (error.code === "P2024"){
-                    console.log("Timed out fetching a new connection from the connection pool")
+            throw error
+        }
+    },
+    findByIdWithoutPassword: async (id) => {
+        try{
+            return await client.user.findUnique({
+                where:{
+                id
+            }, 
+            omit: {
+                 password: true
                 }
-                if (error.code === "P2025"){
-                    console.log("An operation failed because it depends on one or more records that were required but not found")
-                }
-            }
+    }
+)
+        }catch(error){
             throw error
         }
     }
-}   
+}

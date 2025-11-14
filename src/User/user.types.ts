@@ -1,43 +1,41 @@
 import { Prisma } from "../generated/prisma/index.js";
 import type { Request, Response } from "express";
-
-
-export type User = Prisma.UserGetPayload<{}>
-export type RegisterInput = Prisma.UserUncheckedCreateInput
-export type LoginInput = Pick<User, 'password' | 'email'>
-
-
-interface SuccessResponse<T> {
-    status: 'success';
-    statusCode: number;
-    data: T;
-    message?: string;
+export type UserWithoutPassword = Prisma.UserGetPayload<{
+    omit: {
+        password: true
+    }
+}>
+export type IResponse = {
+    token: string
 }
-interface ErrorResponse {
-    status: 'error';
-    statusCode: number;
-    message: string;
-    data?: never;
+export type IStatus<T> = {
+    status: string,
+    message?: string,
+    data: T
 }
-export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
-export type errorMessage = { message: string };
+export type CreateUser = Prisma.UserUncheckedCreateInput
 
-
-export interface IUserRepositoryContract {
+export interface IControllerContract {
     register: (
-        data: RegisterInput
-    ) => Promise<User>
-    findByEmail: (
-        email:string
-    ) => Promise<User | null>
+        req: Request<object, IResponse | string, CreateUser>,
+        res: Response<IResponse | string>
+    ) => Promise<void>,
+    login: (
+        req: Request<object, IResponse | string, CreateUser>,
+        res: Response<IResponse | string>
+    ) => Promise<void>,
+    me: (
+        req: Request<object, UserWithoutPassword | string, object, object>,
+        res: Response<UserWithoutPassword | string>
+    ) => Promise<void>
 }
-export interface IUserController {
-    registerUser: (
-        req: Request<{}, User | errorMessage, RegisterInput>,
-        res: Response<User | errorMessage>
-    ) => void;
-    loginUser: (
-        req: Request<{}, { message: string } | errorMessage, LoginInput>,
-        res: Response<{ message: string } | errorMessage >
-    ) => void
+export interface IServiceContract {
+    createUser: (data: CreateUser) => Promise<IResponse | string>
+    findUserByEmail: (data: CreateUser) => Promise<IResponse | string>
+    me: (id: number) => Promise<UserWithoutPassword | string>
+}
+export interface IRepositoryContract {
+    createUser: (data: CreateUser) => Promise<CreateUser | null>
+    findUserByEmail: (email: string) => Promise<CreateUser | null>
+    findByIdWithoutPassword: (id: number) => Promise<UserWithoutPassword | null>
 }

@@ -14,6 +14,9 @@ export type IStatus<T> = {
     data: T
 }
 export type CreateUser = Prisma.UserUncheckedCreateInput
+export interface AuthenticatedUser {
+	id: number;
+}
 
 export interface IControllerContract {
     register: (

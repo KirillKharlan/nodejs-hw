@@ -1,6 +1,6 @@
 import { client } from "../client/client.ts"
 import { Prisma } from "../generated/prisma/index.js";
-import type { Post, CreatePost, UpdatePost, IRepositoryContract } from './post.types.ts';
+import type { Post, CreatePost, UpdatePost, IRepositoryContract, CreatePostChecked, UpdatePostChecked } from './post.types.ts';
 
 export const postRepository: IRepositoryContract = {
     getAll: async(skip?: number, take?: number): Promise<Post[]> => {
@@ -28,7 +28,7 @@ export const postRepository: IRepositoryContract = {
         });
         return post as Post | null;
     },
-    create: async(data: CreatePost): Promise<Post> => {
+    create: async(data: CreatePost | CreatePostChecked): Promise<Post> => {
         const newPost = await client.post.create({
             data: data,
             include: { 
@@ -37,7 +37,7 @@ export const postRepository: IRepositoryContract = {
         });
         return newPost as Post;
     },
-    update: async(id: number, data: UpdatePost): Promise<Post> => {
+    update: async(id: number, data: UpdatePost | UpdatePostChecked): Promise<Post> => {
         const updatedPost = await client.post.update({
             where: { id },
             data: data,

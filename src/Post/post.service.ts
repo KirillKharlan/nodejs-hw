@@ -8,6 +8,8 @@ import type {
     SimplePost
 } from './post.types.ts'; 
 
+
+
 type PostServiceResponse<T> = Promise<ServiceResponse<T>>;
 
 
@@ -75,10 +77,8 @@ export const postService = {
                 message: "Необхідні поля 'name', 'postDescription' та 'img' не заповнені."
             };
         }
-
         try {
             const newPost = await postRepository.create(data);
-            
             return {
                 status: "success",
                 data: newPost,
@@ -96,22 +96,45 @@ export const postService = {
             };
         }
     },
-    updatePost: async (postId: number, data: UpdatePostChecked): PostServiceResponse<Post> => {
+    updatePost: async (postId: number, data: UpdatePostChecked, userId: number): PostServiceResponse<Post> => {
+        const existingPost = await postRepository.getById(postId);
+        if (!existingPost) {
+            return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
+        }
+        if (existingPost.createdById !== userId) {
+             return { 
+                status: 'error', 
+                statusCode: 403, 
+                message: "Доступ заборонено. Ви не є автором цього поста."
+            };
+        }
         if (Object.keys(data).length === 0) {
             return { status: 'error', statusCode: 400, message: "Тіло запиту не може бути пустим." };
         }
         try {
             const updatedPost = await postRepository.update(postId, data);
             return { status: 'success', statusCode: 200, data: updatedPost };
+            
         } catch (error: any) {
             if (error.code === 'P2025') {
-                 return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.`};
+                 return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
             }
             console.error("Помилка при оновленні поста:", error);
             return { status: 'error', statusCode: 500, message: "Внутрішня помилка сервера." };
         }
     },
-    deletePost: async (postId: number): PostServiceResponse<Post> => {
+    deletePost: async (postId: number, userId: number): PostServiceResponse<Post> => {
+        const existingPost = await postRepository.getById(postId);
+        if (!existingPost) {
+             return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
+        }
+        if (existingPost.createdById !== userId) {
+             return { 
+                status: 'error', 
+                statusCode: 403, 
+                message: "Доступ заборонено. Ви можете видаляти лише власні пости."
+            };
+        }
         try {
             const deletedPost = await postRepository.delete(postId);
             return { 

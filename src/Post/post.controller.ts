@@ -1,6 +1,5 @@
-import type { Request, Response} from 'express'
 import postsService from "./post.service.ts";
-import type{ UpdatePostChecked, IPostController, Post} from "./post.types.ts";
+import type{ UpdatePostChecked, IPostController} from "./post.types.ts";
 
 
 const postController:IPostController = {
@@ -36,17 +35,33 @@ const postController:IPostController = {
 
     // створюємо пости
     createPost: async (req, res) => {
-        const data = req.body;
-        const responseData = await postsService.createPost(data);
-        if (responseData.status === 'error') {
-            res.status(responseData.statusCode).json({ message: responseData.message });
-            return;
+        try {
+            const userId = res.locals.userId;
+            const postInputData = {
+                ...req.body,
+                createdBy: {
+                    connect: {
+                        id: userId
+                    }
+                }
+                
+            }
+            const result = await postsService.createPost(postInputData);
+            if (result.status === 'error') {
+                res.status(result.statusCode).json({ message: result.message });
+                return
+            }
+
+            res.status(result.statusCode).json(result.data);
+
+        } catch (error) {
+            
         }
-        res.status(responseData.statusCode).json(responseData.data);
     },
 
     // оновлення поста по id
     updatePostById: async (req, res) => {
+        const userId = res.locals.userId;
         const postIdParams = req.params.id;
         if (!postIdParams === undefined) {
             res.status(400).send({ message: "id поста не вказано" });
@@ -59,7 +74,7 @@ const postController:IPostController = {
         }
 
         const data = req.body as UpdatePostChecked;
-        const responseData = await postsService.updatePost(postId, data);
+        const responseData = await postsService.updatePost(postId, data, userId);
         if (responseData.status === 'error') {
             res.status(responseData.statusCode).json({ message: responseData.message });
             return;
@@ -69,6 +84,7 @@ const postController:IPostController = {
 
     //видалення поста по id
     deletePostById: async (req, res) => {
+        const userId = res.locals.userId;
         const postIdParams = req.params.id;
         if (postIdParams === undefined) {
             res.status(400).send({ message: "id поста не вказано" });
@@ -79,7 +95,7 @@ const postController:IPostController = {
             res.status(400).json({ message: "id поста повинен бути числом" });
             return;
         }
-        const responseData = await postsService.deletePost(postId);
+        const responseData = await postsService.deletePost(postId, userId);
         if (responseData.status === 'error') {
             res.status(responseData.statusCode).json({ message: responseData.message });
             return;

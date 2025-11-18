@@ -2,17 +2,24 @@ import type { IServiceContract } from "./user.types.ts";
 import { userRepository } from "./user.repository.ts";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env.ts";
+import { compare, hash } from "bcrypt";
+
 
 
 export const userService : IServiceContract = {
-    createUser: async(data)=>{
+    createUser: async(data) => {
         const user = await userRepository.findUserByEmail(data.email)
         if (user){
             return "Error. User already exist!"
         }
-        const createdUser = await userRepository.createUser(data)
-        if (!createdUser){
-            return "Error. User didn`t create!"
+        const hashedPassword = await hash(data.password, 10);
+		const dataWithHashedPassword = {
+			...data,
+			password: hashedPassword
+		}
+        const createdUser = await userRepository.createUser(dataWithHashedPassword);
+        if (!createdUser) {
+            return "Error creating user";
         }
         const token = jwt.sign({id: createdUser.id}, ENV.SECRET_KEY, {
             expiresIn: "7d"
@@ -20,13 +27,14 @@ export const userService : IServiceContract = {
         return { token }
 
     },
-    findUserByEmail: async(data)=>{
+    findUserByEmail: async(data) => {
         const foundedUser = await userRepository.findUserByEmail(data.email)
         if (!foundedUser){
             return "Can't find user!"
         }
-        if (!(data.password === foundedUser.password)){
-            return "Password is incorrect!"
+        const createdUser = await compare(data.password, foundedUser.password);
+        if (!createdUser){
+            return "Wrong credentials"
         }
         const token = jwt.sign({id: foundedUser.id}, ENV.SECRET_KEY, {
             expiresIn: "7d"

@@ -78,10 +78,10 @@ export interface IRepositoryContract {
         id: number
     ) => Promise<Post | null>
 	create: (
-        data: CreatePost
+        data: CreatePost | CreatePostChecked
     ) => Promise<Post>
 	update: (
-        id: number, data: UpdatePost
+        id: number, data: UpdatePost | UpdatePostChecked
     ) => Promise<Post>
     delete: (
         id: number

@@ -6,10 +6,16 @@
 //     try {
 //         const post = await client.post.create({
 //         data: {
-//             name:"firstPost",
-//             postDescription:"first first post",
-//             img:"image",
-//             likes:51601
+//             // name:"firstPost",
+//             // postDescription:"first first post",
+//             // img:"image",
+//             // likes:51601
+//             name: "firstPost",
+//             postDescription: "Programming",
+//             img: "image.png",
+//             likes: 112,
+//             createdById: 1,
+//             categoryId: 1
 //         }
 //         })
 //         console.log("Post created:", post);

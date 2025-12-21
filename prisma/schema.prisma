@@ -20,7 +20,7 @@ model Post {
   name            String
   postDescription String
   img             String
-  likes           Int
+  likes           Int @default(0)
   
 
   createdById     Int      

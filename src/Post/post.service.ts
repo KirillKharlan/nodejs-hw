@@ -1,159 +1,66 @@
-import { postRepository } from './post.repository.ts'; 
-import type { 
-    Post, 
-    UpdatePostChecked, 
-    CreatePostChecked, 
-    ServiceResponse, 
-    PostWithTags, 
-    SimplePost
-} from './post.types.ts'; 
+import { postRepository } from "./post.repository.ts";
+import type { Post, Comment, PostLike } from "../generated/prisma/index.js";
+import type { errorMessage } from "./post.types.ts";
 
 
-
-type PostServiceResponse<T> = Promise<ServiceResponse<T>>;
-
+export type ServiceResponse<T> = {
+    status: 'success' | 'error';
+    statusCode: number;
+    data?: T;
+    message?: string;
+};
 
 export const postService = {
-    getAllPosts: async (skipC?: string, takeC?: string): PostServiceResponse<PostWithTags[]> => {
-        let skip: number | undefined = undefined; 
-        let take: number | undefined = undefined;
-    if (skipC !== undefined && skipC !=='') {
-            const parsedSkip = parseInt(skipC);
-            if (isNaN(parsedSkip) && parsedSkip < 0) {
-                return { status: "error", statusCode: 400, message: "Параметр 'skip' повинен бути невід'ємним числом." };
-            }
-            skip = parsedSkip;
-        }
-        if (takeC !== undefined && takeC !=='') {
-            const parsedTake = parseInt(takeC);
-            if (isNaN(parsedTake) && parsedTake < 0) {
-                return { status: "error", statusCode: 400, message: "Параметр 'take' повинен бути невід'ємним числом." };
-            }
-            take = parsedTake;
-        }
+    getAllPosts: async (skip?: number, take?: number): Promise<ServiceResponse<Post[]>> => {
         try {
-            const resultPosts = await postRepository.getAll(skip, take);
-            return {
-                status: "success",
-                statusCode: 200,
-                data: resultPosts as PostWithTags[]
-            };
+            const posts = await postRepository.getAll(skip, take);
+            return { status: 'success', statusCode: 200, data: posts };
         } catch (error) {
-            console.error("Помилка при отриманні постів:", error);
-            return {
-                status: "error",
-                statusCode: 500,
-                message: "Внутрішня помилка сервера при отриманні постів."
-            };
-        }
-    },
-    getPostsById: async (postId: number): PostServiceResponse<Post> => {
-        try {
-            const post = await postRepository.getById(postId);
-
-            if (!post) {
-                return {
-                    status: "error",
-                    statusCode: 404,
-                    message: `Пост з ID ${postId} не знайдено.`,
-                };
-            } 
-            return {
-                status: "success",
-                statusCode: 200,
-                data: post,
-            };
-        } catch (error) {
-             console.error("Помилка при отриманні поста:", error);
-             return { status: "error", statusCode: 500, message: "Внутрішня помилка сервера." };
+            return { status: 'error', statusCode: 500, message: "Не вдалося завантажити пости" };
         }
     },
 
-    createPost: async (data: CreatePostChecked): PostServiceResponse<Post> => {
-        if (!data.name && !data.postDescription && !data.img) {
-             return {
-                status: "error",
-                statusCode: 422,
-                message: "Необхідні поля 'name', 'postDescription' та 'img' не заповнені."
-            };
-        }
+    getPostById: async (id: number, currentUserId?: number, includes: string[] = []): Promise<ServiceResponse<any>> => {
         try {
-            const newPost = await postRepository.create(data);
-            return {
-                status: "success",
-                data: newPost,
-                statusCode: 201
+            const post = await postRepository.getById(id, includes);
+            if (!post) return { status: 'error', statusCode: 404, message: "Пост не знайдено" };
+            const postData = {
+                ...post,
+                isLiked: false
             };
-        } catch (error: any) {
-            console.error("Помилка при створенні поста:", error);
-            if (error.code === 'P2002') {
-                return { status: "error", statusCode: 409, message: "Пост з таким ім'ям вже існує." };
+            if (currentUserId && post.likedBy) {
+                postData.isLiked = post.likedBy.some((like: any) => like.userId === currentUserId);
             }
-            return {
-                status: "error",
-                statusCode: 500,
-                message: "Внутрішня помилка сервера при збереженні поста."
-            };
+            return { status: 'success', statusCode: 200, data: postData };
+        } catch (error) {
+            return { status: 'error', statusCode: 500, message: "Помилка сервера" };
         }
     },
-    updatePost: async (postId: number, data: UpdatePostChecked, userId: number): PostServiceResponse<Post> => {
-        const existingPost = await postRepository.getById(postId);
-        if (!existingPost) {
-            return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
-        }
-        if (existingPost.createdById !== userId) {
-             return { 
-                status: 'error', 
-                statusCode: 403, 
-                message: "Доступ заборонено. Ви не є автором цього поста."
-            };
-        }
-        if (Object.keys(data).length === 0) {
-            return { status: 'error', statusCode: 400, message: "Тіло запиту не може бути пустим." };
-        }
+
+    createComment: async (postId: number, userId: number, body: string): Promise<ServiceResponse<Comment>> => {
         try {
-            const updatedPost = await postRepository.update(postId, data);
-            return { status: 'success', statusCode: 200, data: updatedPost };
-            
-        } catch (error: any) {
-            if (error.code === 'P2025') {
-                 return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
-            }
-            console.error("Помилка при оновленні поста:", error);
-            return { status: 'error', statusCode: 500, message: "Внутрішня помилка сервера." };
+            const comment = await postRepository.addComment(postId, userId, body);
+            return { status: 'success', statusCode: 201, data: comment };
+        } catch (error) {
+            return { status: 'error', statusCode: 500, message: "Помилка при створенні коментаря" };
         }
     },
-    deletePost: async (postId: number, userId: number): PostServiceResponse<Post> => {
-        const existingPost = await postRepository.getById(postId);
-        if (!existingPost) {
-             return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
-        }
-        if (existingPost.createdById !== userId) {
-             return { 
-                status: 'error', 
-                statusCode: 403, 
-                message: "Доступ заборонено. Ви можете видаляти лише власні пости."
-            };
-        }
+
+    likePost: async (postId: number, userId: number): Promise<ServiceResponse<{ message: string }>> => {
         try {
-            const deletedPost = await postRepository.delete(postId);
-            return { 
-                status: 'success', 
-                statusCode: 200, 
-                data: deletedPost 
-            };
-        } catch (error: any) {
-            if (error.code === 'P2025') {
-                 return { status: 'error', statusCode: 404, message: `Пост з ID ${postId} не знайдено.` };
-            }
-            console.error("Помилка при видаленні поста:", error);
-            return {
-                status: "error",
-                statusCode: 500,
-                message: "Внутрішня помилка сервера при видаленні поста."
-            };
+            await postRepository.addLike(postId, userId);
+            return { status: 'success', statusCode: 201, data: { message: "Liked" } };
+        } catch (error) {
+            return { status: 'error', statusCode: 400, message: "Помилка: можливо, лайк вже існує" };
+        }
+    },
+
+    unlikePost: async (postId: number, userId: number): Promise<ServiceResponse<{ message: string }>> => {
+        try {
+            await postRepository.removeLike(postId, userId);
+            return { status: 'success', statusCode: 200, data: { message: "Unliked" } };
+        } catch (error) {
+            return { status: 'error', statusCode: 404, message: "Лайк не знайдено" };
         }
     }
-}
-
-export default postService;
+};

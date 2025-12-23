@@ -1,108 +1,87 @@
-import postsService from "./post.service.ts";
-import type{ UpdatePostChecked, IPostController} from "./post.types.ts";
+import type { Request, Response } from 'express';
+import type { IPostController, errorMessage } from './post.types.ts';
+import { postRepository } from './post.repository.ts';
+import { postService } from './post.service.ts';
 
-
-const postController:IPostController = {
-    // беремо усі пости, якщо є парамети skip / take враховуємо їх
+const postController: IPostController = {
     getAllPosts: async (req, res) => {
-        const skipC = req.query.skip as string | undefined;
-        const takeC = req.query.take as string | undefined;
-
-        const responseData = await postsService.getAllPosts(skipC, takeC);
-
-        if (responseData.status === 'error') {
-            res.status(400).json({ message: responseData.message });
-            return;
-        }
-        res.status(200).json(responseData.data);
+        const skip = req.query.skip ? parseInt(req.query.skip) : undefined;
+        const take = req.query.take ? parseInt(req.query.take) : undefined;
+        const posts = await postRepository.getAll(skip, take);
+        return res.json(posts);
     },
 
-    // беремо пости по Id
-    getPostsById: async (req, res) => {
-        const postIdParams = req.params.id;
-        if (postIdParams === undefined) {
-            res.status(400).send({ message: "idParams undefined" });
-            return;
+    getPostsById: async (req: Request, res: Response) => {
+        const id = parseInt(req.params.id!, 10);
+        const currentUserId = res.locals.userId;
+        const includeQuery = req.query.include;
+        const includes = Array.isArray(includeQuery) ? (includeQuery as string[]) : (includeQuery ? [includeQuery as string] : []);
+        if (currentUserId && !includes.includes('likedBy')) {
+            includes.push('likedBy');
         }
-        const postId = parseInt(postIdParams);
-        const responseData = await postsService.getPostsById(postId);
-        if (responseData.status === 'error') {
-            res.status(404).json({ message: responseData.message });
-            return;
-        }
-        res.status(200).json(responseData.data);
+        const result = await postService.getPostById(id, currentUserId, includes);
+        return res.status(result.statusCode).json(result.data);
     },
 
-    // створюємо пости
     createPost: async (req, res) => {
-        try {
-            const userId = res.locals.userId;
-            const postInputData = {
-                ...req.body,
-                createdBy: {
-                    connect: {
-                        id: userId
-                    }
-                }
-                
-            }
-            const result = await postsService.createPost(postInputData);
-            if (result.status === 'error') {
-                res.status(result.statusCode).json({ message: result.message });
-                return
-            }
-
-            res.status(result.statusCode).json(result.data);
-
-        } catch (error) {
-            
-        }
+        const post = await postRepository.create(req.body);
+        return res.status(201).json(post);
     },
 
-    // оновлення поста по id
     updatePostById: async (req, res) => {
-        const userId = res.locals.userId;
-        const postIdParams = req.params.id;
-        if (!postIdParams === undefined) {
-            res.status(400).send({ message: "id поста не вказано" });
-            return;
-        }
-        const postId = parseInt(postIdParams);
-        if (isNaN(postId)) {
-            res.status(400).json({ message: "id поста повинен бути числом" });
-            return;
-        }
-
-        const data = req.body as UpdatePostChecked;
-        const responseData = await postsService.updatePost(postId, data, userId);
-        if (responseData.status === 'error') {
-            res.status(responseData.statusCode).json({ message: responseData.message });
-            return;
-        }
-        res.status(responseData.statusCode).json(responseData.data);
+        const post = await postRepository.update(parseInt(req.params.id), req.body);
+        return res.json(post);
     },
 
-    //видалення поста по id
     deletePostById: async (req, res) => {
-        const userId = res.locals.userId;
-        const postIdParams = req.params.id;
-        if (postIdParams === undefined) {
-            res.status(400).send({ message: "id поста не вказано" });
-            return;
-        }
-        const postId = parseInt(postIdParams);
-        if (isNaN(postId)) {
-            res.status(400).json({ message: "id поста повинен бути числом" });
-            return;
-        }
-        const responseData = await postsService.deletePost(postId, userId);
-        if (responseData.status === 'error') {
-            res.status(responseData.statusCode).json({ message: responseData.message });
-            return;
-        }
-        res.status(responseData.statusCode).json(responseData.data);
+        const post = await postRepository.delete(parseInt(req.params.id));
+        return res.json(post);
     },
-}
 
+    createComment: async (req: Request, res: Response) => {
+        try {
+            const postId = parseInt(req.params.id!, 10);
+            const { body } = req.body;
+            const userId = res.locals.userId; 
 
-export default postController
+            if (!userId) {
+                return res.status(401).json({ message: "Користувач не авторизований" });
+            }
+            if (!body) {
+                return res.status(400).json({ message: "Текст коментаря обов'язковий" });
+            }
+            const result = await postService.createComment(postId, userId, body);
+            
+            if (result.status === 'error') {
+                return res.status(result.statusCode).json({ message: result.message });
+            }
+            return res.status(201).json(result.data);
+        } catch (error: any) {
+            return res.status(500).json({ message: error.message });
+        }
+    },
+
+    likePost: async (req: Request, res: Response) => {
+        try {
+            const postId = parseInt(req.params.id!, 10);
+            const userId = res.locals.userId; 
+            if (!userId) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+            await postRepository.addLike(postId, userId);
+            return res.status(201).json({ message: "Post liked successfully" });
+        } catch (error: any) {
+            console.error("Like error:", error);
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    },
+
+    unlikePost: async (req, res) => {
+        const postId = parseInt(req.params.id!, 10);
+        const userId = parseInt(req.params.userId!, 10);
+        await postRepository.removeLike(postId, userId);
+        return res.json({ message: "Unliked" });
+    }
+};
+
+export default postController;

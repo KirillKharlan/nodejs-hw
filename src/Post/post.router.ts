@@ -1,15 +1,17 @@
-import express, { Router } from 'express';
+import { Router } from 'express';
 import postController from './post.controller.ts';
-import { authMiddleware } from "../middlewares/auth-middleware.ts";
+import { authMiddleware } from '../middlewares/auth-middleware.ts';
 
+const postRouter = Router();
 
-const router:Router = express.Router()
+postRouter.get('/posts/', postController.getAllPosts);
+postRouter.post('/posts/', postController.createPost);
+postRouter.get('/posts/:id', postController.getPostsById);
+postRouter.put('/posts/:id', postController.updatePostById);
+postRouter.delete('/posts/:id', postController.deletePostById);
+postRouter.post('/posts/:id/comments', authMiddleware, postController.createComment);
+postRouter.put('/posts/:id/likes/:userId', authMiddleware, postController.likePost);
+postRouter.delete('/posts/:id/likes/:userId', postController.unlikePost);
 
-router.get("/posts/:id", postController.getPostsById)
-router.get("/posts", postController.getAllPosts)
-router.post("/posts", authMiddleware, postController.createPost)
-router.patch("/posts/:id", authMiddleware, postController.updatePostById)
-router.delete("/posts/:id", authMiddleware, postController.deletePostById)
+export default postRouter;
 
-
-export default router

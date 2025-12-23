@@ -3,7 +3,12 @@ import type { AuthenticatedUser } from "../User/user.types.ts";
 import jwt from "jsonwebtoken";
 import { ENV } from "../config/env.ts";
 
-export function authMiddleware(req: Request, res: Response<object,{userId: number}>, next: NextFunction){
+
+export function authMiddleware(
+    req: Request, 
+    res: Response<object, { userId: number; username: string }>, 
+    next: NextFunction
+) {
     const authorization = req.headers.authorization;
     if (!authorization) {
         res.status(401).json({
@@ -11,6 +16,7 @@ export function authMiddleware(req: Request, res: Response<object,{userId: numbe
         });
         return;
     }
+
     const [typeToken, token] = authorization.split(" ");
     if (typeToken !== "Bearer" || !token) {
         res.status(401).json({
@@ -18,11 +24,12 @@ export function authMiddleware(req: Request, res: Response<object,{userId: numbe
         });
         return;
     }
+
     try {
         const decodedToken = jwt.verify(token, ENV.SECRET_KEY) as AuthenticatedUser;
-        res.locals.userId = decodedToken.id
-        next()
-
+        res.locals.userId = decodedToken.id;
+        res.locals.username = decodedToken.username;
+        next();
     } catch (error) {
         console.log(error);
         res.status(401).json({
@@ -30,4 +37,3 @@ export function authMiddleware(req: Request, res: Response<object,{userId: numbe
         });
     }
 }
-

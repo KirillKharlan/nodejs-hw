@@ -10,8 +10,8 @@ postRouter.get('/posts/:id', postController.getPostsById);
 postRouter.put('/posts/:id', postController.updatePostById);
 postRouter.delete('/posts/:id', postController.deletePostById);
 postRouter.post('/posts/:id/comments', authMiddleware, postController.createComment);
-postRouter.put('/posts/:id/likes/:userId', authMiddleware, postController.likePost);
-postRouter.delete('/posts/:id/likes/:userId', postController.unlikePost);
+postRouter.put('/posts/:id/likes', authMiddleware, postController.likePost);
+postRouter.delete('/posts/:id/likes', authMiddleware, postController.unlikePost);
 
 export default postRouter;
 

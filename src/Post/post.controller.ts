@@ -76,9 +76,10 @@ const postController: IPostController = {
         }
     },
 
-    unlikePost: async (req, res) => {
+    unlikePost: async (req: Request, res: Response) => {
         const postId = parseInt(req.params.id!, 10);
-        const userId = parseInt(req.params.userId!, 10);
+        const userId = res.locals.userId;
+        if (!userId) return res.status(401).json({ message: "Unauthorized" });
         await postRepository.removeLike(postId, userId);
         return res.json({ message: "Unliked" });
     }

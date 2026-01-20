@@ -1,7 +1,5 @@
 import { postRepository } from "./post.repository.ts";
-import type { Post, Comment, PostLike } from "../generated/prisma/index.js";
-import type { errorMessage } from "./post.types.ts";
-
+import type { Post, Comment } from "../generated/prisma/index.js";
 
 export type ServiceResponse<T> = {
     status: 'success' | 'error';
@@ -11,10 +9,14 @@ export type ServiceResponse<T> = {
 };
 
 export const postService = {
-    getAllPosts: async (skip?: number, take?: number): Promise<ServiceResponse<Post[]>> => {
+    getAllPosts: async (skip?: number, take?: number, currentUserId?: number): Promise<ServiceResponse<any[]>> => {
         try {
             const posts = await postRepository.getAll(skip, take);
-            return { status: 'success', statusCode: 200, data: posts };
+            const data = posts.map(post => ({
+                ...post,
+                isLiked: currentUserId ? (post as any).likedBy?.some((l: any) => l.userId === currentUserId) : false
+            }));
+            return { status: 'success', statusCode: 200, data };
         } catch (error) {
             return { status: 'error', statusCode: 500, message: "Не вдалося завантажити пости" };
         }
@@ -24,16 +26,27 @@ export const postService = {
         try {
             const post = await postRepository.getById(id, includes);
             if (!post) return { status: 'error', statusCode: 404, message: "Пост не знайдено" };
-            const postData = {
-                ...post,
-                isLiked: false
+            
+            const isLiked = currentUserId && post.likedBy 
+                ? post.likedBy.some((like: any) => like.userId === currentUserId) 
+                : false;
+
+            return { 
+                status: 'success', 
+                statusCode: 200, 
+                data: { ...post, isLiked } 
             };
-            if (currentUserId && post.likedBy) {
-                postData.isLiked = post.likedBy.some((like: any) => like.userId === currentUserId);
-            }
-            return { status: 'success', statusCode: 200, data: postData };
         } catch (error) {
             return { status: 'error', statusCode: 500, message: "Помилка сервера" };
+        }
+    },
+
+    createPost: async (data: any): Promise<ServiceResponse<Post>> => {
+        try {
+            const post = await postRepository.create(data);
+            return { status: 'success', statusCode: 201, data: post };
+        } catch (error) {
+            return { status: 'error', statusCode: 400, message: "Помилка при створенні поста" };
         }
     },
 
@@ -42,25 +55,7 @@ export const postService = {
             const comment = await postRepository.addComment(postId, userId, body);
             return { status: 'success', statusCode: 201, data: comment };
         } catch (error) {
-            return { status: 'error', statusCode: 500, message: "Помилка при створенні коментаря" };
-        }
-    },
-
-    likePost: async (postId: number, userId: number): Promise<ServiceResponse<{ message: string }>> => {
-        try {
-            await postRepository.addLike(postId, userId);
-            return { status: 'success', statusCode: 201, data: { message: "Liked" } };
-        } catch (error) {
-            return { status: 'error', statusCode: 400, message: "Помилка: можливо, лайк вже існує" };
-        }
-    },
-
-    unlikePost: async (postId: number, userId: number): Promise<ServiceResponse<{ message: string }>> => {
-        try {
-            await postRepository.removeLike(postId, userId);
-            return { status: 'success', statusCode: 200, data: { message: "Unliked" } };
-        } catch (error) {
-            return { status: 'error', statusCode: 404, message: "Лайк не знайдено" };
+            return { status: 'error', statusCode: 500, message: "Не вдалося додати коментар" };
         }
     }
 };

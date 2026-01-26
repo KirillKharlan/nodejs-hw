@@ -8,6 +8,7 @@ const userRouter = Router();
 userRouter.post('/register', userController.register);
 userRouter.post('/login', userController.login);
 userRouter.get('/me', authMiddleware, userController.me);
+userRouter.put('/update', authMiddleware, userController.updateMe);
 
 
 export default userRouter;

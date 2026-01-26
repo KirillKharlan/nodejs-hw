@@ -18,6 +18,8 @@ export interface AuthenticatedUser {
 	id: number;
     username: string;
 }
+export type UpdateUser = Partial<CreateUser>;
+
 
 export interface IControllerContract {
     register: (
@@ -31,15 +33,21 @@ export interface IControllerContract {
     me: (
         req: Request<object, UserWithoutPassword | string, object, object>,
         res: Response<UserWithoutPassword | string>
-    ) => Promise<void>
+    ) => Promise<void>,
+    updateMe: (
+        req: Request<object, UserWithoutPassword | string, UpdateUser>,
+        res: Response<UserWithoutPassword | string>
+    ) => Promise<void | Response>;
 }
 export interface IServiceContract {
     createUser: (data: CreateUser) => Promise<IResponse | string>
     findUserByEmail: (data: CreateUser) => Promise<IResponse | string>
     me: (id: number) => Promise<UserWithoutPassword | string>
+    updateUser: (id: number, data: UpdateUser) => Promise<UserWithoutPassword | string>;
 }
 export interface IRepositoryContract {
     createUser: (data: CreateUser) => Promise<CreateUser | null>
     findUserByEmail: (email: string) => Promise<CreateUser | null>
     findByIdWithoutPassword: (id: number) => Promise<UserWithoutPassword | null>
+    update: (id: number, data: UpdateUser) => Promise<UserWithoutPassword | null>;
 }

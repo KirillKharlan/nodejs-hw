@@ -53,11 +53,20 @@ export const userRepository: IRepositoryContract = {
             }, 
             omit: {
                  password: true
-                }
-    }
-)
+                }});
         }catch(error){
             throw error
+        }
+    },
+    update: async (id, data) => {
+        try {
+            return await client.user.update({
+                where: { id },
+                data: data,
+                omit: { password: true }
+            });
+        } catch (error) {
+            throw error;
         }
     }
 }
